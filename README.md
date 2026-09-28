@@ -1,94 +1,107 @@
 # Receipt Manager
 
-A local POS, invoice manager, and thermal receipt designer. React + TypeScript + Vite frontend, Express API, and SQLite persistence. No cloud account or internet connection is required after installation.
+Aplikasi kasir lokal untuk mengelola produk, pelanggan, pesanan, penjualan, dan invoice, serta mendesain dan mencetak struk thermal. Dibangun dengan React, TypeScript, Vite, Express, dan SQLite. Setelah instalasi selesai, aplikasi dapat digunakan tanpa akun layanan cloud atau koneksi internet.
 
-**Ubuntu:** see [Panduan instalasi Ubuntu](docs/UBUNTU.md). No deployment is performed automatically.
+**Pengguna Ubuntu:** ikuti [panduan instalasi Ubuntu](docs/UBUNTU.md). Aplikasi tidak melakukan deployment secara otomatis.
 
-## Requirements
+## Persyaratan
 
-- Windows 10/11, macOS, or Linux.
-- Node.js **22.13+** (Node 24 LTS recommended), npm, and a modern browser.
-- Internet is needed for the initial `npm install`. Images and fonts have no CDN dependencies.
-- Install your thermal printer driver separately. Browser printing supports 58 mm and 80 mm templates.
+- Windows 10/11, macOS, atau Linux.
+- Node.js **22.13 atau lebih baru** (disarankan Node.js 24 LTS), npm, dan peramban modern.
+- Koneksi internet untuk menjalankan `npm install` pertama kali. Gambar dan font tidak bergantung pada CDN.
+- Driver printer thermal yang dipasang terpisah. Pencetakan melalui peramban mendukung template 58 mm dan 80 mm.
 
-## Start on Windows (CMD)
+Database menggunakan **SQLite** dan dibuat otomatis di `data/receipt.db`. Aplikasi dapat berjalan berdampingan dengan MariaDB; tidak perlu membuat database atau akun MariaDB tambahan.
 
-Extract `receipt-app.zip`, open CMD in the extracted directory, then run:
+## Instalasi dan menjalankan aplikasi
 
-```cmd
+Ambil kode dari GitHub:
+
+```bash
+git clone https://github.com/wnyova/receipt-app.git
 cd receipt-app
 npm install
 npm run dev
 ```
 
-Open **http://localhost:5173**. A single command starts both the web interface and the API on **http://localhost:3001**. Keep the CMD window open. Press Ctrl+C to stop. Data is retained after stopping or restarting the computer; the application does not autostart.
+Jika menggunakan `receipt-app.zip`, ekstrak arsip tersebut, buka terminal atau CMD di folder `receipt-app`, lalu jalankan `npm install` dan `npm run dev`.
 
-`better-sqlite3` normally downloads a prebuilt binary. If installation reports a native build error, use a supported Node LTS version matching your Windows architecture, then reinstall. An unsupported architecture may require Python and Visual Studio Build Tools (Desktop development with C++).
+Buka **http://localhost:5173**. Satu perintah menjalankan antarmuka aplikasi dan API pada **http://localhost:3001**. Biarkan terminal tetap terbuka selama aplikasi digunakan. Tekan **Ctrl+C** untuk menghentikannya.
 
-## Production build
+Data tetap tersimpan setelah aplikasi dihentikan atau komputer dimulai ulang. Aplikasi tidak berjalan otomatis saat komputer dinyalakan.
 
-```cmd
+### Jika instalasi SQLite gagal di Windows
+
+`better-sqlite3` biasanya mengunduh komponen biner yang sudah dikompilasi. Jika muncul kesalahan kompilasi, gunakan versi Node.js LTS yang didukung dan sesuai dengan arsitektur Windows, lalu ulangi instalasi. Arsitektur yang tidak menyediakan komponen biner siap pakai mungkin memerlukan Python dan Visual Studio Build Tools dengan komponen **Desktop development with C++**.
+
+## Menjalankan versi produksi
+
+Jalankan dari folder utama proyek setelah dependensi terpasang:
+
+```bash
 npm run build
 npm start
 ```
 
-Open **http://localhost:3001**. Express serves both the built frontend and the API. Run these commands from the project root. `npm start` requires a successful build first.
+Buka **http://localhost:3001**. Express melayani antarmuka hasil kompilasi dan API pada alamat yang sama. Perintah `npm start` memerlukan hasil `npm run build` yang berhasil.
 
-Both modes bind to the local device. Do not expose this unauthenticated app through port forwarding, a public reverse proxy, or a shared network.
+Kedua mode hanya menerima koneksi dari perangkat lokal. Aplikasi belum memiliki autentikasi, sehingga jangan membukanya melalui penerusan port, proksi publik, atau jaringan bersama. Untuk mengaksesnya dari PC lain melalui server Ubuntu, gunakan panduan **SSH tunnel** di [panduan Ubuntu](docs/UBUNTU.md).
 
-## First use
+## Penggunaan pertama
 
-1. Open **Pengaturan → Informasi aplikasi**, enter your shop details, optionally upload a logo, and save.
-2. Add products with unique codes, prices, units, and categories.
-3. Add customers if needed; anonymous sales use **Pelanggan umum**.
-4. Open **Pesanan → Pesanan baru**, add products, quantities, and any discount/tax/fees.
-5. Save an in-progress order or select a payment method and enter the paid amount.
-6. Choose **Selesaikan pembayaran** and confirm. Underpaid orders cannot complete.
-7. Open **Cetak struk**. Choose the printer and paper size in the browser dialog.
+1. Buka **Pengaturan → Informasi aplikasi**, isi informasi toko, unggah logo jika diperlukan, lalu simpan.
+2. Tambahkan produk beserta kode unik, harga, satuan, dan kategori.
+3. Tambahkan pelanggan jika diperlukan. Transaksi tanpa kontak pelanggan menggunakan **Pelanggan umum**.
+4. Buka **Pesanan → Pesanan baru**, lalu tambahkan produk, jumlah, diskon, pajak, dan biaya tambahan sesuai kebutuhan.
+5. Simpan pesanan yang belum selesai, atau pilih metode pembayaran dan masukkan jumlah pembayaran.
+6. Pilih **Selesaikan pembayaran**, lalu konfirmasi. Pesanan tidak dapat diselesaikan jika pembayaran kurang dari total.
+7. Buka **Cetak struk**, kemudian pilih printer dan ukuran kertas melalui dialog cetak peramban.
 
-There are no seeded sales or products. Dashboard totals come from completed transactions in SQLite. Receipt Designer uses clearly labeled example data for preview only.
+Aplikasi tidak menyertakan produk atau penjualan contoh sebagai data awal. Angka pada Dashboard berasal dari transaksi selesai yang tersimpan di SQLite. Data contoh pada Receipt Designer hanya digunakan untuk pratinjau dan diberi keterangan.
 
-## Orders and calculations
+## Pesanan dan perhitungan
 
-- Statuses: Draft, Menunggu Pembayaran, Diproses, Selesai, Dibatalkan.
-- Payment methods: Cash, Transfer, QRIS, Debit, Credit, Other. These **record** a payment made outside the app; no bank or QRIS payment processing is performed.
-- Each line = quantity × price, rounded to two decimals. Discount applies to the subtotal; tax applies after the discount; fees are added afterward. The final total is rounded to the configured increment.
-- Decimal-safe multiplication rounds half-up before calculations use integer minor units to avoid accumulating floating-point totals. The server recalculates every order and ignores totals supplied by a browser.
-- Invoice numbers use a global, monotonically increasing sequence assigned in a database transaction. They do not reset monthly, and canceled numbers are never reused.
-- Completed orders are immutable. Cancellation preserves the invoice and excludes it from sales totals. Cancellation does not initiate a refund.
-- Completed receipts retain a snapshot of the transaction, customer, store information, and template. Editing a product or deleting a customer does not rewrite the historical invoice.
-- Logo and product images are local file references. Preserve `uploads/` to keep old logos printable.
-- Dashboard monetary statistics are filtered by the selected currency; historical currencies are never added together. Each invoice retains its currency. Changing the current currency does not convert earlier invoices or product prices. For a single shop, set currency before entering real transactions.
+- **Status pesanan:** Draft, Menunggu Pembayaran, Diproses, Selesai, dan Dibatalkan.
+- **Metode pembayaran:** Cash, Transfer, QRIS, Debit, Credit, dan Other, sesuai nama pilihan pada aplikasi. Pilihan tersebut hanya **mencatat** pembayaran yang dilakukan di luar aplikasi; aplikasi tidak memproses pembayaran bank atau QRIS.
+- Total setiap item dihitung dari jumlah × harga, lalu dibulatkan menjadi dua angka desimal. Diskon diterapkan pada subtotal, pajak dihitung setelah diskon, dan biaya tambahan ditambahkan setelahnya. Total akhir dibulatkan sesuai kelipatan yang dipilih.
+- Perkalian memakai aritmetika desimal dengan pembulatan ke atas saat tepat di titik tengah (*half-up*). Perhitungan berikutnya menggunakan bilangan bulat dalam satuan terkecil mata uang untuk menghindari akumulasi kesalahan pecahan. Server menghitung ulang setiap pesanan dan mengabaikan total yang dikirim peramban.
+- Nomor invoice menggunakan urutan global yang selalu bertambah dan ditetapkan dalam transaksi database. Urutan tidak diulang setiap bulan, dan nomor yang dibatalkan tidak digunakan kembali.
+- Pesanan selesai tidak dapat diedit. Pembatalan mempertahankan invoice, tetapi mengeluarkannya dari total penjualan. Membatalkan pesanan tidak otomatis mengembalikan uang kepada pelanggan.
+- Struk transaksi selesai menyimpan salinan rincian transaksi, pelanggan, informasi toko, dan template. Mengedit produk atau menghapus pelanggan tidak mengubah invoice lama.
+- Logo dan gambar produk mengacu pada berkas lokal. Pertahankan folder `uploads/` agar logo pada struk lama tetap dapat dicetak.
+- Statistik nominal pada Dashboard dipisahkan berdasarkan mata uang yang dipilih. Nilai dari mata uang berbeda tidak dijumlahkan. Setiap invoice tetap menyimpan mata uangnya sendiri. Mengubah mata uang toko tidak mengonversi invoice lama atau harga produk; atur mata uang sebelum mulai mencatat transaksi.
 
-## Receipt Designer
+## Mendesain struk
 
-Go to **Pengaturan → Printer & struk → Receipt Designer**.
+Buka **Pengaturan → Printer & struk → Receipt Designer**.
 
-- Create, duplicate, rename, delete, and choose a default template.
-- Only one template is default; select another default before deleting the current one.
-- Drag elements to change their order. Arrow buttons provide keyboard/touch alternatives.
-- Click an element in the list or preview to edit visibility, typeface, size, color, bold, alignment, margin, padding, horizontal position, and width.
-- Header, footer, thank-you text, and QR content support predefined variables: `{{store_name}}`, `{{invoice_number}}`, `{{customer_name}}`, `{{items}}`, `{{grand_total}}`.
-- QR defaults to the invoice number. It is not a generated payment QRIS code.
-- Save the template before leaving the designer. Saved templates are stored in SQLite.
-- Colored elements appear as grayscale on monochrome thermal printers.
+- Buat, duplikasikan, ganti nama, hapus, atau tetapkan template utama.
+- Hanya satu template yang menjadi utama. Tetapkan template lain sebagai utama sebelum menghapus template utama saat ini.
+- Tarik dan lepas elemen untuk mengubah urutannya. Tombol panah dapat digunakan sebagai alternatif melalui papan ketik atau layar sentuh.
+- Klik elemen pada daftar atau pratinjau untuk mengatur tampil/sembunyi, jenis dan ukuran font, warna, teks tebal, perataan, margin, jarak dalam, posisi horizontal, dan lebar.
+- Teks pembuka, penutup, ucapan terima kasih, dan isi kode QR mendukung variabel: `{{store_name}}`, `{{invoice_number}}`, `{{customer_name}}`, `{{items}}`, dan `{{grand_total}}`.
+- Secara bawaan, kode QR berisi nomor invoice. Kode tersebut bukan kode pembayaran QRIS.
+- Simpan template sebelum meninggalkan editor. Template tersimpan di SQLite.
+- Elemen berwarna dicetak dalam gradasi abu-abu pada printer thermal monokrom.
 
-The receipt layout uses normal document flow, not unrestricted absolute positioning. Horizontal offset/width/alignment and vertical spacing provide positioning that adapts to changing item counts.
+Tata letak struk mengikuti urutan elemen agar dapat menyesuaikan jumlah item. Posisi dapat diatur melalui pergeseran horizontal, lebar, perataan, dan jarak vertikal. Baris yang berisi pasangan label dan nominal tetap menempatkan keduanya pada sisi berlawanan; pengaturan perataan terutama berlaku pada elemen teks tunggal.
 
-## Printing
+## Mencetak struk
 
-Only the dedicated receipt area is included in print output. Sidebar, navigation, buttons, editor, and app backgrounds are excluded.
+Hanya area struk yang masuk ke hasil cetak. Bilah samping, navigasi, tombol, editor, dan latar belakang aplikasi tidak ikut dicetak.
 
-1. Install and select the thermal printer driver.
-2. Choose 58 mm or 80 mm paper in both the app and driver.
-3. Use **100% scale**, **no margins**, and disable browser **headers and footers**.
-4. Print a test receipt and adjust driver printable width if necessary.
+1. Pasang driver dan pilih printer thermal yang akan digunakan.
+2. Pilih ukuran kertas **58 mm** atau **80 mm** pada aplikasi dan pengaturan driver.
+3. Gunakan **skala 100%**, **tanpa margin**, dan nonaktifkan **header/footer peramban**.
+4. Cetak struk percobaan. Sesuaikan lebar area cetak pada driver jika diperlukan.
 
-Browser `@page` support and thermal roll length differ by driver. The app requests the selected width; the driver remains authoritative. It cannot silently select a printer, send raw ESC/POS commands, operate a cash drawer, or confirm a physical print succeeded. Printing does not mark an order paid. A canceled invoice is visibly labeled **DIBATALKAN**.
+Dukungan aturan cetak `@page` dan panjang kertas gulung berbeda menurut peramban dan driver. Aplikasi meminta lebar yang dipilih, tetapi pengaturan driver tetap menentukan hasil akhirnya.
 
-## Backup and recovery
+Aplikasi tidak memilih printer secara diam-diam, mengirim perintah ESC/POS langsung, mengoperasikan laci kasir, atau memastikan bahwa pencetakan fisik berhasil. Mencetak struk tidak mengubah pesanan menjadi lunas. Invoice yang dibatalkan diberi tanda **DIBATALKAN**.
 
-All business data is stored at:
+## Pencadangan dan pemulihan data
+
+Data usaha disimpan di:
 
 ```text
 data/receipt.db
@@ -96,46 +109,48 @@ uploads/logos/
 uploads/products/
 ```
 
-Use **Pengaturan → Backup & restore → Unduh backup** to download a consistent `.db` snapshot, including when the app is running. Do not copy only a live `receipt.db` file manually: SQLite may still have committed data in its WAL sidecar.
+Gunakan **Pengaturan → Backup & restore → Unduh backup** untuk mengunduh salinan database `.db` yang konsisten, termasuk saat aplikasi sedang berjalan. Jangan hanya menyalin `receipt.db` secara manual ketika aplikasi aktif: sebagian data yang sudah tersimpan mungkin masih berada di berkas pendamping WAL milik SQLite.
 
-For full migration, also copy the `uploads/` directory. Database backups do not embed uploaded images. Keep backups on a separate drive.
+Untuk memindahkan seluruh aplikasi ke perangkat lain, salin juga folder `uploads/`. Cadangan database tidak menyertakan gambar. Simpan cadangan di media penyimpanan terpisah.
 
-To restore:
+### Memulihkan cadangan
 
-1. Choose a `.db` backup from this application (maximum 100 MB).
-2. Confirm replacement using the in-app confirmation dialog.
-3. The app validates SQLite integrity, schema version, application records, and foreign keys.
-4. It saves the current database to `data/backups/before-restore-*.db`.
-5. It replaces records in one transaction. If replacement fails, the old data remains.
+1. Pilih berkas cadangan `.db` dari aplikasi ini, maksimal **100 MB**.
+2. Konfirmasikan penggantian data melalui dialog di dalam aplikasi.
+3. Aplikasi memeriksa integritas SQLite, versi struktur database, isi data aplikasi, dan relasi antartabel.
+4. Database saat ini dicadangkan otomatis ke `data/backups/before-restore-*.db`.
+5. Data digantikan dalam satu transaksi database. Jika penggantian gagal, data lama tetap tersimpan.
 
-A backup is not encrypted. Treat it as private business data. Restore an automatic backup through the same interface if you selected the wrong file. Stop other work during a restore. Old backup files accumulate in `data/backups`; manage retention yourself.
+Berkas cadangan tidak dienkripsi, sehingga perlu dijaga sebagai data usaha pribadi. Jika salah memilih cadangan, pulihkan cadangan otomatis melalui menu yang sama. Hentikan aktivitas pencatatan selama pemulihan berlangsung. Cadangan lama terkumpul di `data/backups`; atur penyimpanan dan penghapusannya sesuai kebutuhan.
 
-## Security
+## Keamanan
 
-- Prepared statements, foreign keys, database constraints, and transactions.
-- Zod validation on both frontend forms and API inputs.
-- Loopback binding, Host/Origin checks, cross-site request rejection; no cloud auth.
-- Images limited to PNG/JPEG/WEBP, 5 MB, with extension, MIME, and signature checks; randomized filenames.
-- React escaping; templates cannot execute JavaScript or inject HTML.
-- Runtime files, databases, uploads, and environment files are excluded from git and release packages.
+- Kueri berparameter, relasi antartabel, batasan database, dan transaksi digunakan untuk menjaga konsistensi data.
+- Masukan formulir dan API divalidasi menggunakan Zod.
+- Server hanya menerima koneksi lokal, memeriksa Host/Origin, dan menolak permintaan lintas situs. Tidak menggunakan autentikasi cloud.
+- Unggahan gambar dibatasi ke PNG, JPEG, dan WEBP, maksimal 5 MB. Ekstensi, tipe MIME, dan penanda isi berkas diperiksa; nama berkas dibuat secara acak.
+- Teks ditampilkan melalui mekanisme pengamanan bawaan React. Template tidak dapat menjalankan JavaScript atau menyisipkan HTML.
+- Berkas operasional, database, unggahan, dan berkas konfigurasi lingkungan tidak disertakan dalam Git atau paket distribusi.
 
-## Development
+## Pengembangan
 
-```cmd
+Jalankan pengujian, kompilasi, dan perapian format kode dengan:
+
+```bash
 npm test
 npm run build
 npm run format
 ```
 
-API routes: `/api/products`, `/api/customers`, `/api/orders`, `/api/sales`, `/api/receipt-templates`, `/api/settings`, `/api/uploads`, `/api/dashboard`, `/api/backup`, `/api/restore`.
+Jalur API: `/api/products`, `/api/customers`, `/api/orders`, `/api/sales`, `/api/receipt-templates`, `/api/settings`, `/api/uploads`, `/api/dashboard`, `/api/backup`, dan `/api/restore`.
 
-```text
-src/          React pages, shared controls, receipt rendering
-shared/       Validation schemas, types, and money calculation
-server/       Express API, SQLite initialization, local entry point
-scripts/      Single-command development launcher
-tests/        Database/API integration and money tests
-docs/         Original specification, implementation plan, QA notes
-```
+| Folder | Isi |
+| --- | --- |
+| `src/` | Halaman React, komponen bersama, dan tampilan struk |
+| `shared/` | Skema validasi, tipe data, dan perhitungan nominal |
+| `server/` | API Express, inisialisasi SQLite, dan titik masuk server |
+| `scripts/` | Skrip untuk menjalankan aplikasi dalam satu perintah |
+| `tests/` | Pengujian integrasi database/API dan perhitungan nominal |
+| `docs/` | Spesifikasi awal, rencana implementasi, panduan Ubuntu, dan catatan pengujian |
 
-Dates follow the machine's local timezone. Back up before updating. Never remove `data/` or `uploads/` when replacing source files. `npm install` followed by `npm run build` refreshes a production installation.
+Tanggal mengikuti zona waktu lokal komputer. Buat cadangan sebelum memperbarui aplikasi. Jangan menghapus `data/` atau `uploads/` ketika mengganti kode. Untuk memperbarui instalasi produksi, hentikan aplikasi, ambil kode terbaru, jalankan `npm install` dan `npm run build`, lalu jalankan kembali dengan `npm start`.
